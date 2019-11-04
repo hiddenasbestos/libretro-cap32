@@ -361,19 +361,20 @@ void retro_set_environment(retro_environment_t cb)
    bool allow_no_game = true;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &allow_no_game);
 
-   static const struct retro_controller_description p1_controllers[] = {
-     { "Amstrad Joystick", RETRO_DEVICE_AMSTRAD_JOYSTICK },
-   };
-   static const struct retro_controller_description p2_controllers[] = {
-     { "Amstrad Joystick", RETRO_DEVICE_AMSTRAD_JOYSTICK },
-   };
+	static const struct retro_controller_description p1_controllers[] = {
+		{ "Amstrad Joystick", RETRO_DEVICE_AMSTRAD_JOYSTICK },
+	};
 
+	/*static const struct retro_controller_description p2_controllers[] = {
+		{ "Amstrad Joystick", RETRO_DEVICE_AMSTRAD_JOYSTICK },
+	};*/
 
-   static const struct retro_controller_info ports[] = {
-     { p1_controllers, 1  }, // port 1
-     { p2_controllers, 1  }, // port 2
-     { NULL, 0 }
-   };
+	static const struct retro_controller_info ports[] =
+	{
+		{ p1_controllers, 1  }, // port 1
+//		{ p2_controllers, 1  }, // port 2
+		{ NULL, 0 }
+	};
 
    environ_cb( RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports );
 
@@ -922,15 +923,11 @@ void retro_run(void)
 
 	retro_loop();
 
-	// blit
-//	memcpy(Retro_Screen,bmp,gfx_buffer_size);
+	video_cb( bmp, retro_scr_w, retro_scr_h, retro_scr_w << PIXEL_BYTES );
 
 	input_poll_cb(); // retroarch get keys
 
-	// --- Player 1/2 Joystick code
 	ev_joysticks();
-
-	video_cb( bmp, retro_scr_w, retro_scr_h, retro_scr_w << PIXEL_BYTES );
 }
 
 bool retro_load_game(const struct retro_game_info *game)
