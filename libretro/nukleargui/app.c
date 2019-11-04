@@ -291,11 +291,7 @@ int Core_PollEvent()
    input_poll_cb(); // retroarch get keys
 
    // --- Player 1/2 Joystick code
-   if(showkeyb < 0){
-      ev_joysticks();
-   } else {
-      ev_vkeyboard();
-   }
+   ev_joysticks();
 
    // --- Keyboard code --
    // TODO: clean and change to callback

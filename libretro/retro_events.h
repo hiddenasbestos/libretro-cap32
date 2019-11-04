@@ -117,8 +117,6 @@ enum emu_key_id {
 };
 
 void ev_joysticks();
-void ev_vkeyboard();
-void ev_cursorjoy(bool activate);
 void ev_init();
 
 #endif

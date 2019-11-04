@@ -47,65 +47,24 @@ const uint8_t bit_values[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
 
 // --- events code
 #define MAX_KEYSYMS 324
-#define MAX_BUTTONS 14
-#define MAX_PADCFG 3
+#define MAX_BUTTONS 10
 
 static uint8_t keyboard_translation[MAX_KEYSYMS];
 unsigned int last_input[PORTS_NUMBER] = {0,0};
 uint32_t padnum = 0;
 
-const uint8_t btnPAD[MAX_PADCFG][MAX_BUTTONS] = {
-   {
-   CPC_KEY_JOY_FIRE2,   // B
-   CPC_KEY_SPACE,       // Y
-   CPC_KEY_NULL,        // SELECT
-   CPC_KEY_J,           // START
+const uint8_t btnPAD[MAX_BUTTONS] =
+{
+   CPC_KEY_JOY_FIRE1,   // B
+   CPC_KEY_NULL,    	// Y
+   CPC_KEY_NULL,      	// SELECT
+   CPC_KEY_NULL,       	// START
    CPC_KEY_JOY_UP,      // DUP
    CPC_KEY_JOY_DOWN,    // DDOWN
    CPC_KEY_JOY_LEFT,    // DLEFT
    CPC_KEY_JOY_RIGHT,   // DRIGHT
-   CPC_KEY_JOY_FIRE1,   // A
-   CPC_KEY_S,           // X
-   //---------------------
-   CPC_KEY_RETURN,      // L
-   CPC_KEY_SHIFT,       // R
-   CPC_KEY_CONTROL,     // L2
-   CPC_KEY_COPY,        // R2
-   },
-   {
-   CPC_KEY_F1,          // B
-   CPC_KEY_F2,          // Y
-   CPC_KEY_NULL,        // SELECT
-   CPC_KEY_K,           // START
-   CPC_KEY_Q,           // DUP
-   CPC_KEY_A,           // DDOWN
-   CPC_KEY_O,           // DLEFT
-   CPC_KEY_P,           // DRIGHT
-   CPC_KEY_SPACE,       // A
-   CPC_KEY_H,           // X
-   //---------------------
-   CPC_KEY_RETURN,      // L
-   CPC_KEY_SHIFT,       // R
-   CPC_KEY_CONTROL,     // L2
-   CPC_KEY_COPY,        // R2
-   },
-   {
-   CPC_KEY_SPACE,       // B
-   CPC_KEY_W,           // Y
-   CPC_KEY_NULL,        // SELECT
-   CPC_KEY_F,           // START
-   CPC_KEY_CURSOR_UP,   // DUP
-   CPC_KEY_CURSOR_DOWN, // DDOWN
-   CPC_KEY_CURSOR_LEFT, // DLEFT
-   CPC_KEY_CURSOR_RIGHT,// DRIGHT
-   CPC_KEY_A,           // A
-   CPC_KEY_C,           // X
-   //---------------------
-   CPC_KEY_P,           // L
-   CPC_KEY_L,           // R
-   CPC_KEY_R,           // L2
-   CPC_KEY_U,           // R2
-   }
+   CPC_KEY_JOY_FIRE2,   // A
+   CPC_KEY_NULL,        // X
 };
 
 /**
@@ -138,99 +97,39 @@ static uint8_t get_cpckey (unsigned int keysym)
 }
 
 /**
- * ev_special_combos:
- * generate the SELECT + JOYPAD_x result in screen/emulation
- *
- * TODO: add an help-screen in emulation screen?
- **/
-static void ev_special_combos()
-{
-   static uint32_t last_event = 0;
-   uint32_t pressed = 0;
-
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B)) {
-      BIT_SET(pressed, RETRO_DEVICE_ID_JOYPAD_B);
-      if(pressed != last_event)
-            kbd_buf_feed("CAT\n");
-   } else if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y)) {
-      BIT_SET(pressed, RETRO_DEVICE_ID_JOYPAD_Y);
-      if(pressed != last_event)
-            kbd_buf_feed("|CPM\n");
-   } else if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A)) {
-      BIT_SET(pressed, RETRO_DEVICE_ID_JOYPAD_A);
-      if(pressed != last_event)
-           kbd_buf_feed("RUN\"DISK\nRUN\"DISC\n");
-   } else if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X)) {
-      BIT_SET(pressed, RETRO_DEVICE_ID_JOYPAD_X);
-      if(pressed != last_event)
-           kbd_buf_feed("|TAPE\nRUN\"\n^");
-   } else if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START)) {
-      BIT_SET(pressed, RETRO_DEVICE_ID_JOYPAD_START);
-      if(pressed != last_event) {
-            showkeyb=-showkeyb;
-            memset(keyboard_matrix, 0xff, sizeof(keyboard_matrix)); // clear CPC keyboard matrix
-      }
-   } else if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP)) {
-      BIT_SET(pressed, RETRO_DEVICE_ID_JOYPAD_UP);
-      if(pressed != last_event){
-           kbd_buf_feed("1\nY\n");
-           retro_message("PRESSED => 1/Y");
-        }
-   } else if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN)) {
-      BIT_SET(pressed, RETRO_DEVICE_ID_JOYPAD_DOWN);
-      if(pressed != last_event) {
-           kbd_buf_feed("2\nN\n");
-           retro_message("PRESSED => 2/N");
-        }
-   } else if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT)) {
-      BIT_SET(pressed, RETRO_DEVICE_ID_JOYPAD_LEFT);
-      if(pressed != last_event){
-         kbd_buf_feed("4\nS\n");
-         retro_message("PRESSED => 4/S");
-      }
-   } else if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT)) {
-      BIT_SET(pressed, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      if(pressed != last_event){
-         kbd_buf_feed("3\nJ\n");
-         retro_message("PRESSED => 3/J");
-      }
-   }
-
-   last_event = pressed;
-}
-
-/**
  * ev_process_joy:
  * @playerID: the player id (see DEVICE AMSTRAD)
  *
  * process joystick using input_state_cb to CPC/Keyboard
  **/
-static void ev_process_joy(int playerID){
+static void ev_process_joy(int playerID)
+{
+	/*disabled?*/
+	if ( ( ( amstrad_devices[ playerID ] ) & RETRO_DEVICE_MASK ) == RETRO_DEVICE_NONE )
+		return;
 
-   /*disabled?*/
-   if(((amstrad_devices[playerID])&RETRO_DEVICE_MASK)==RETRO_DEVICE_NONE)
-      return;
+	int i;
 
-   if( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT)) {
-      ev_special_combos();
-      return;
-   }
+	for ( i = 0; i < MAX_BUTTONS; i++ )
+	{
+		const uint8_t key = btnPAD[ i ];
+		if ( key == CPC_KEY_NULL )
+			continue;
 
-   uint8_t * pad = (uint8_t*) &btnPAD[retro_computer_cfg.padcfg[playerID]];
-
-   int i;
-   for (i = 0; i < MAX_BUTTONS; i++) {
-      if (input_state_cb(playerID, RETRO_DEVICE_JOYPAD, 0, i)) {
-         if(!(BIT_CHECK(last_input[playerID], i))) {
-            press_emulated_key(*(pad+i));
-            BIT_ADD(last_input[playerID], i);
-         }
-      }
-      else if (BIT_CHECK(last_input[playerID], i)) {
-         release_emulated_key(*(pad+i));
-         BIT_CLEAR(last_input[playerID], i);
-      }
-   }
+		if ( input_state_cb( playerID, RETRO_DEVICE_JOYPAD, 0, i ) )
+		{
+			if(!(BIT_CHECK(last_input[playerID], i)))
+			{
+				press_emulated_key(key);
+				BIT_ADD(last_input[playerID], i);
+			}
+		}
+		else if (BIT_CHECK(last_input[playerID], i))
+		{
+			release_emulated_key(key);
+			BIT_CLEAR(last_input[playerID], i);
+		}
+	}
 }
 
 /**
@@ -238,33 +137,8 @@ static void ev_process_joy(int playerID){
  * function to unify event code, call joy events and get user pad data
  **/
 void ev_joysticks() {
-   // exit on controllers config to RETRO_DEVICE_AMSTRAD_KEYBOARD
-   if(amstrad_devices[0] == RETRO_DEVICE_AMSTRAD_KEYBOARD)
-         return;
-
    ev_process_joy(ID_PLAYER1);
    ev_process_joy(ID_PLAYER2);
-}
-
-/**
- * ev_gui_keyboard:
- * GUI_MENU / GUI_VIRTUAL_KEYBOARD
- * WIP: preliminar code - just remove GUI_VIRTUAL_KEYBOARD atm
- **/
-void ev_vkeyboard(){
-   static uint32_t last_event = 0;
-   uint32_t pressed = 0;
-
-   if ( (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT))
-        && (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START)) ) {
-      BIT_SET(pressed, 3);
-      if(pressed != last_event) {
-         showkeyb=-showkeyb;
-         last_event = pressed;
-      }
-   } else {
-      last_event = 0;
-   }
 }
 
 void ev_key(int key, bool pressed) {
@@ -290,30 +164,6 @@ static void keyboard_cb(bool down, unsigned keycode, uint32_t character, uint16_
 
    ev_key(keycode, down);
 
-}
-
-/**
- * ev_cursorjoy:
- * @activate: if TRUE emulation on cursors is activated
- *            if FALSE emulation is disabled and cursors works normally
- *
- * Changes keyboard table to bind CPC joystick on cursors
- * TODO: activate using GUI
- **/
-void ev_cursorjoy(bool activate) {
-   if(activate) {
-      keyboard_translation[RETROK_LCTRL] = CPC_KEY_JOY_FIRE1;
-      keyboard_translation[RETROK_UP] = CPC_KEY_JOY_UP;
-      keyboard_translation[RETROK_DOWN] = CPC_KEY_JOY_DOWN;
-   	keyboard_translation[RETROK_LEFT] = CPC_KEY_JOY_LEFT;
-   	keyboard_translation[RETROK_RIGHT] = CPC_KEY_JOY_RIGHT;
-   } else {
-      keyboard_translation[RETROK_LCTRL] = CPC_KEY_NULL;
-      keyboard_translation[RETROK_UP] = CPC_KEY_CURSOR_UP;
-   	keyboard_translation[RETROK_DOWN] = CPC_KEY_CURSOR_DOWN;
-   	keyboard_translation[RETROK_LEFT] = CPC_KEY_CURSOR_LEFT;
-   	keyboard_translation[RETROK_RIGHT] = CPC_KEY_CURSOR_RIGHT;
-   }
 }
 
 /**
@@ -418,7 +268,8 @@ void init_keyboard_table() {
  **/
 void ev_init(){
 
-   struct retro_input_descriptor inputDescriptors[] = {
+   struct retro_input_descriptor inputDescriptors[] =
+   {
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, "A" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, "B" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X, "X" },

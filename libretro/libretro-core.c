@@ -96,7 +96,6 @@ unsigned amstrad_devices[ 2 ];
 int autorun=0;
 
 int emu_status = COMPUTER_OFF;
-int gui_status = GUI_DISABLED;
 
 //CAP32 DEF BEGIN
 #include "cap32.h"
@@ -143,17 +142,17 @@ void retro_set_input_poll(retro_input_poll_t cb)
 }
 
 int retro_getStyle(){
-    LOGI("getStyle: %u\n", retro_scr_style);
+//    LOGI("getStyle: %u\n", retro_scr_style);
     return retro_scr_style;
 }
 
 int retro_getGfxBpp(){
-    LOGI("getBPP: %u\n", 16 * PIXEL_BYTES);
+//    LOGI("getBPP: %u\n", 16 * PIXEL_BYTES);
     return 16 * PIXEL_BYTES;
 }
 
 int retro_getGfxBps(){
-    LOGI("getBPS: %u\n", retro_scr_w);
+//    LOGI("getBPS: %u\n", retro_scr_w);
     return retro_scr_w;
 }
 
@@ -219,7 +218,7 @@ int pre_main(const char *argv)
    for (i = 0; i < PARAMCOUNT; i++)
    {
       xargv_cmd[i] = (char*)(XARGV[i]);
-      LOGI("%2d  %s\n",i,XARGV[i]);
+//      LOGI("%2d  %s\n",i,XARGV[i]);
    }
 
    skel_main(PARAMCOUNT,( char **)xargv_cmd);
@@ -399,70 +398,33 @@ void retro_set_environment(retro_environment_t cb)
 
    static const struct retro_controller_description p1_controllers[] = {
      { "Amstrad Joystick", RETRO_DEVICE_AMSTRAD_JOYSTICK },
-     { "Amstrad Keyboard", RETRO_DEVICE_AMSTRAD_KEYBOARD },
    };
    static const struct retro_controller_description p2_controllers[] = {
      { "Amstrad Joystick", RETRO_DEVICE_AMSTRAD_JOYSTICK },
-     { "Amstrad Keyboard", RETRO_DEVICE_AMSTRAD_KEYBOARD },
    };
 
 
    static const struct retro_controller_info ports[] = {
-     { p1_controllers, 2  }, // port 1
-     { p2_controllers, 2  }, // port 2
+     { p1_controllers, 1  }, // port 1
+     { p2_controllers, 1  }, // port 2
      { NULL, 0 }
    };
 
    environ_cb( RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports );
 
    struct retro_variable variables[] = {
-      {
-         "cap32_retrojoy0",
-         "User 1 Amstrad Joystick Config; joystick|qaop|incentive",
-      },
-      {
-         "cap32_retrojoy1",
-         "User 2 Amstrad Joystick Config; joystick|qaop|incentive",
-      },
 	   {
 		   "cap32_autorun",
-		   "Autorun; enabled|disabled",
+		   "Auto Start; enabled|disabled",
 	   },
       {
-         "cap32_resolution",
-         #ifdef ANDROID
-         // TODO: removed on android, need debug crash on hires is selected (issue #48)
-         "Internal resolution; 384x272",
-         #else
-         "Internal resolution; 384x272|768x544",
-         #endif
-      },
-      {
-         "cap32_model",
-         "Model; 6128|464", // 6128+ - WIP
-      },
-      {
-         "cap32_ram",
-         "Ram size; 128|64|192|512|576",
-      },
-      #if 0
-      {
-         "cap32_statusbar", // unused - but i try to implement in a future
-         "Status Bar; disabled|enabled",
-      },
-      #endif
-      {
          "cap32_scr_tube",
-         "Monitor Type; color|green|white",
+         "Monitor Type; Color|Green",
       },
-      {
-         "cap32_scr_intensity",
-         "Monitor Intensity; 8|9|10|11|12|13|14|15|5|6|7",
-      },
-      {
+      /*{
          "cap32_lang_layout",
-         "CPC Language; english|french|spanish",
-      },
+         "System Language; English|French|Spanish",
+      },*/
 
       { NULL, NULL },
    };
@@ -470,49 +432,30 @@ void retro_set_environment(retro_environment_t cb)
    environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, variables);
 }
 
-/**
- * controller_port_variable:
- * @port: user port (see DEVICE AMSTRAD)
- * @var: retro_variable ptr (modified)
- *
- * Query retro_environment callback to get joy values
- *
- * Returns: current user joy config (0/1/2),selected in GUI
- *          otherwise default config 0 (joystick)
- **/
-static int controller_port_variable(unsigned port, struct retro_variable *var)
-{
-	if ((!environ_cb) || port >= PORTS_NUMBER)
-		return 0;
-
-	var->value = NULL;
-	switch (port) {
-   	case ID_PLAYER1:
-   		var->key = "cap32_retrojoy0";
-   		break;
-   	case ID_PLAYER2:
-   		var->key = "cap32_retrojoy1";
-   		break;
-   	}
-
-	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, var) && var->value)
-   {
-      if(strcmp(var->value, "qaop") == 0)
-         return 1;
-      if(strcmp(var->value, "incentive") == 0)
-         return 2;
-   }
-
-   return 0;
-}
-
 static void update_variables(void)
 {
-   struct retro_variable var;
+	// Fixed resolution
+	retrow = 768;
+	retroh = 544;
 
-   // user 1/2 - input config
-   retro_computer_cfg.padcfg[ID_PLAYER1] = controller_port_variable(ID_PLAYER1, &var);
-   retro_computer_cfg.padcfg[ID_PLAYER2] = controller_port_variable(ID_PLAYER2, &var);
+	// Machine specification
+	if ( emu_status == COMPUTER_OFF )
+	{
+#if FORCE_MACHINE == 464
+		LOGI( "Machine: CPC 464\n" );
+		retro_computer_cfg.model = 0;
+		retro_computer_cfg.ram = 64;//KB
+#elif FORCE_MACHINE == 6128
+		LOGI( "Machine: CPC 6128\n" );
+		retro_computer_cfg.model = 2;
+		retro_computer_cfg.ram = 128;//KB
+#endif // FORCE_MACHINE
+
+		// English
+		retro_computer_cfg.lang = 0;
+	}
+
+   struct retro_variable var;
 
    var.key = "cap32_autorun";
    var.value = NULL;
@@ -523,128 +466,40 @@ static void update_variables(void)
          autorun = 1;
    }
 
-   var.key = "cap32_resolution";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      char *pch;
-      char str[100];
-      snprintf(str, sizeof(str), "%s", var.value);
-
-      pch = strtok(str, "x");
-      if (pch)
-         retrow = strtoul(pch, NULL, 0);
-      pch = strtok(NULL, "x");
-      if (pch)
-         retroh = strtoul(pch, NULL, 0);
-   }
-
-   var.key = "cap32_model";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      int val = 2; // DEFAULT 6128
-      if (strcmp(var.value, "464") == 0) val=0;
-      else if (strcmp(var.value, "6128") == 0) val=2;
-      else if (strcmp(var.value, "6128+") == 0) val=3;
-
-      if (retro_computer_cfg.model != val) {
-         retro_computer_cfg.model = val;
-         if(emu_status & COMPUTER_READY) {
-            LOGI("REBOOT - CPC MODEL: %u\n", val);
-            change_model(val);
-         }
-      }
-   }
-
-   var.key = "cap32_ram";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      char str[100];
-      int val;
-      snprintf(str, sizeof(str), "%s", var.value);
-      val = strtoul(str, NULL, 0);
-      if (retro_computer_cfg.ram != val) {
-         retro_computer_cfg.ram = val;
-         if(emu_status & COMPUTER_READY) {
-            LOGI("REBOOT - CPC RAM: %u\n", val);
-            change_ram(val);
-         }
-      }
-   }
-
-   var.key = "cap32_statusbar";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-		if (strcmp(var.value, "enabled") == 0)
-         BIT_ADD(gui_status, GUI_STATUSBAR);
-
-		if (strcmp(var.value, "disabled") == 0)
-         BIT_CLEAR(gui_status, GUI_STATUSBAR);
-
-         //TODO: call update status
-   }
-
    var.key = "cap32_scr_tube";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if(emu_status & COMPUTER_READY) {
-         if (strcmp(var.value, "color") == 0){
+         if (strcmp(var.value, "Color") == 0){
             CPC.scr_tube = CPC_MONITOR_COLOR;
             video_set_palette();
          }
-   		else if (strcmp(var.value, "green") == 0){
+   		else if (strcmp(var.value, "Green") == 0){
             CPC.scr_tube = CPC_MONITOR_GREEN;
-            video_set_palette();
-         }
-         else if (strcmp(var.value, "white") == 0){
-            CPC.scr_tube = CPC_MONITOR_WHITE;
             video_set_palette();
          }
 		}
    }
 
-   var.key = "cap32_scr_intensity";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      char str[100];
-      int val;
-      snprintf(str, sizeof(str), "%s", var.value);
-      val = strtoul(str, NULL, 0);
-
-      if(emu_status & COMPUTER_READY) {
-         CPC.scr_intensity = val;
-         video_set_palette();
-      }
-   }
-
-   var.key = "cap32_lang_layout";
+   /*var.key = "cap32_lang_layout";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       int val = 0; // DEFAULT ENGLISH
-      if (strcmp(var.value, "french") == 0) val=1;
-      else if (strcmp(var.value, "spanish") == 0) val=2;
+      if (strcmp(var.value, "French") == 0) val=1;
+      else if (strcmp(var.value, "Spanish") == 0) val=2;
 
       if (retro_computer_cfg.lang != val) {
          retro_computer_cfg.lang = val;
          if(emu_status & COMPUTER_READY) {
             change_lang(val);
-            LOGI("REBOOT - CPC LANG: %u (%x)\n", val, emu_status);
+            LOGI("REBOOT - CPC LANG: %u (emu_status = %x)\n", val, emu_status);
          }
       }
-   }
+   }*/
 
    // check if emulation need a restart (model/lang/... is changed)
    if(retro_computer_cfg.is_dirty)
@@ -682,6 +537,9 @@ void retro_reset(void)
 //*****************************************************************************
 //*****************************************************************************
 // Disk control
+
+#if FORCE_MACHINE == 6128
+
 static bool disk_set_eject_state(bool ejected)
 {
 	if (dc)
@@ -756,7 +614,8 @@ static bool disk_add_image_index(void)
 	return false;
 }
 
-static struct retro_disk_control_callback disk_interface = {
+static struct retro_disk_control_callback disk_interface =
+{
    disk_set_eject_state,
    disk_get_eject_state,
    disk_get_image_index,
@@ -765,6 +624,8 @@ static struct retro_disk_control_callback disk_interface = {
    disk_replace_image_index,
    disk_add_image_index,
 };
+
+#endif // FORCE_MACHINE == 6128
 
 //*****************************************************************************
 //*****************************************************************************
@@ -791,13 +652,17 @@ void computer_load_bios() {
 }
 
 // load content
-void computer_load_file() {
-   int i;
+void computer_load_file()
+{
+#if FORCE_MACHINE == 6128
+
    // If it's a m3u file
    if (strlen(RPATH) >= strlen(M3U_FILE_EXT))
       if(!strcasecmp(&RPATH[strlen(RPATH)-strlen(M3U_FILE_EXT)], M3U_FILE_EXT))
       {
-         // Parse the m3u file
+		int i;
+
+        // Parse the m3u file
          dc_parse_m3u(dc, RPATH);
 
          // Some debugging
@@ -855,16 +720,23 @@ void computer_load_file() {
 
          return;
       }
+#endif // 6128
 
    // If it's a tape
    if (strlen(RPATH) >= strlen(CDT_FILE_EXT))
       if(!strcasecmp(&RPATH[strlen(RPATH)-strlen(CDT_FILE_EXT)], CDT_FILE_EXT))
       {
          int error = tape_insert ((char *)RPATH);
-         if (!error) {
-            kbd_buf_feed("|tape\nrun\"\n^");
+         if (!error)
+         {
+#if FORCE_MACHINE == 6128
+            kbd_buf_feed("|tape\n");
+#endif // FORCE_MACHINE
+            kbd_buf_feed("run\"\n^");
             LOGI("Tape inserted: %s\n", (char *)RPATH);
-         } else {
+         }
+         else
+         {
             LOGI("Tape Error (%d): %s\n", error, (char *)RPATH);
          }
 
@@ -932,9 +804,9 @@ void retro_init(void)
 
    sprintf(retro_system_data_directory, "%s%cdata",RETRO_DIR, slash); // TODO: unused ?
 
-   LOGI("Retro SYSTEM_DIRECTORY %s\n",retro_system_directory);
-   LOGI("Retro SAVE_DIRECTORY %s\n",retro_save_directory);
-   LOGI("Retro CONTENT_DIRECTORY %s\n",retro_content_directory);
+//   LOGI("Retro SYSTEM_DIRECTORY %s\n",retro_system_directory);
+//   LOGI("Retro SAVE_DIRECTORY %s\n",retro_save_directory);
+//   LOGI("Retro CONTENT_DIRECTORY %s\n",retro_content_directory);
 
 #ifndef M16B
     	enum retro_pixel_format fmt =RETRO_PIXEL_FORMAT_XRGB8888;
@@ -952,15 +824,15 @@ void retro_init(void)
    // events initialize - joy and keyboard
    ev_init();
 
+#if FORCE_MACHINE == 6128
 	// Disk control interface
 	environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &disk_interface);
+#endif // FORCE_MACHINE
 
    // prepare shared variables
    retro_computer_cfg.model = -1;
    retro_computer_cfg.ram = -1;
    retro_computer_cfg.lang = -1;
-   retro_computer_cfg.padcfg[ID_PLAYER1] = 0;
-   retro_computer_cfg.padcfg[ID_PLAYER2] = 1;
 
    update_variables();
 
@@ -975,8 +847,8 @@ void retro_init(void)
       retro_scr_style = 4;
 
 
-   fprintf(stderr, "[libretro-cap32]: Got size: %u x %u (s%d rs%d bs%u).\n",
-         retrow, retroh, retro_scr_style, gfx_buffer_size, (unsigned int) sizeof(bmp));
+   /*fprintf(stderr, "[libretro-cap32]: Got size: %u x %u (s%d rs%d bs%u).\n",
+         retrow, retroh, retro_scr_style, gfx_buffer_size, (unsigned int) sizeof(bmp));*/
 
    // init screen once
    app_init(retrow, retroh);
@@ -1024,12 +896,17 @@ void retro_set_controller_port_device( unsigned port, unsigned device )
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "cap32";
+#if FORCE_MACHINE == 464
+   info->library_name = "CaPriCe (464)";
+   info->valid_extensions = "tap|cdt";
+#elif FORCE_MACHINE == 6128
+   info->library_name = "CaPriCe (6128)";
+   info->valid_extensions = "dsk|m3u";
+#endif // FORCE_MACHINE
    #ifndef GIT_VERSION
-   #define GIT_VERSION ""
+   #define GIT_VERSION "4.2"
    #endif
-   info->library_version  = "4.2" GIT_VERSION;
-   info->valid_extensions = "dsk|sna|zip|tap|cdt|voc|cpr|m3u";
+   info->library_version  = GIT_VERSION;
    info->need_fullpath    = true;
    info->block_extract = false;
 

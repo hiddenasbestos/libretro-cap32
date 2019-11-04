@@ -28,7 +28,7 @@ extern unsigned amstrad_devices[ PORTS_NUMBER ];
 #define LOG_TAG "RetroArch.Frodo"
 #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #else
-#define LOGI printf
+#define LOGI(...) log_cb( RETRO_LOG_INFO, __VA_ARGS__ )
 #endif
 
 //SCREEN 16BITS
@@ -70,14 +70,6 @@ extern PIXEL_TYPE *Retro_Screen;
 #define BIT_TOGGLE(var, bit) var ^= 1 << bit
 
 
-// RETROGUI STATUS - BIT WISE
-#define GUI_DISABLED     0
-#define GUI_KEYBOARD     1
-#define GUI_MENU         2
-#define GUI_STATUSBAR    4
-extern int gui_status;
-
-
 // COMPUTER/EMU STATUS - BIT WISE
 #define COMPUTER_OFF     0
 #define COMPUTER_BOOTING 1
@@ -88,7 +80,6 @@ typedef struct {
    int model;
    int ram; /*request only! beware: 6128 enforces minimum!*/
    int lang;
-   uint32_t padcfg[PORTS_NUMBER];
    bool is_dirty;
 } computer_cfg_t;
 extern computer_cfg_t retro_computer_cfg;
