@@ -21,6 +21,8 @@
 #include <libretro.h>
 #include <libretro-core.h>
 
+extern int DRIVE_SOUNDS;
+
 #include "retro_snd.h"
 
 #define BUFSIZE 44100 / 50
@@ -178,32 +180,35 @@ void sound_stop(retro_guisnd_t* snd) {
  */
 static void mix_audio(retro_guisnd_t* snd)
 {
-   if (snd->sample_pos + BUFSIZE > snd->samples_tot) {
-      // exits if no loop sound...
-      if(snd->state == ST_ON) {
-         sound_stop(snd);
-         return;
-      }
-      snd->sample_pos = 0;
-   }
+	if (snd->sample_pos + BUFSIZE > snd->samples_tot) {
+	// exits if no loop sound...
+	if(snd->state == ST_ON) {
+		sound_stop(snd);
+		return;
+	}
+		snd->sample_pos = 0;
+	}
 
 
-   // prepare loop vars
-   int16_t* samples = snd_buffer;
-   int16_t* rawsamples16 = (int16_t*) ((uint8_t*) snd->rawsamples + (BYTESPERSAMPLE * snd->sample_pos));
-   unsigned i = BUFSIZE;
+	// prepare loop vars
+	int16_t* samples = snd_buffer;
+	int16_t* rawsamples16 = (int16_t*) ((uint8_t*) snd->rawsamples + (BYTESPERSAMPLE * snd->sample_pos));
+	unsigned i = BUFSIZE;
 
-   while (i--)
-   {
-      *samples += *rawsamples16;
-      *(samples + 1) += *rawsamples16;
+	while (i--)
+	{
+		if ( DRIVE_SOUNDS )
+		{
+			*samples += *rawsamples16;
+			*(samples + 1) += *rawsamples16;
+		}
 
-      // prepare next loop
-      rawsamples16++;
-      samples += 2;
-   }
+		// prepare next loop
+		rawsamples16++;
+		samples += 2;
+	}
 
-   snd->sample_pos     += BUFSIZE;
+	snd->sample_pos     += BUFSIZE;
 }
 
 

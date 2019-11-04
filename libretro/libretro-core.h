@@ -9,6 +9,8 @@
 
 #include <stdbool.h>
 
+#include "libretro.h"
+
 // DEVICE AMSTRAD
 #define RETRO_DEVICE_AMSTRAD_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 0)
 #define RETRO_DEVICE_AMSTRAD_JOYSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
@@ -22,14 +24,9 @@ extern unsigned amstrad_devices[ PORTS_NUMBER ];
 #define TEX_MAX_WIDTH 768
 #define TEX_MAX_HEIGHT 544
 
-//LOG
-#if  defined(__ANDROID__) || defined(ANDROID)
-#include <android/log.h>
-#define LOG_TAG "RetroArch.Frodo"
-#define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-#else
+// LOG
+extern retro_log_printf_t log_cb;
 #define LOGI(...) log_cb( RETRO_LOG_INFO, __VA_ARGS__ )
-#endif
 
 //SCREEN 16BITS
 //#define M16B

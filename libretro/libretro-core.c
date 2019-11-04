@@ -33,6 +33,7 @@ static dc_storage* dc;
 
 // LOG
 retro_log_printf_t log_cb;
+#define LOGI(...) log_cb( RETRO_LOG_INFO, __VA_ARGS__ )
 
 computer_cfg_t retro_computer_cfg;
 
@@ -84,6 +85,7 @@ int gfx_buffer_size=0;
 
 unsigned amstrad_devices[ 2 ];
 
+int DRIVE_SOUNDS=0;
 int SND=1;
 int SHIFTON=-1;
 int autorun=0;
@@ -99,10 +101,6 @@ extern uint8_t *pbSndBuffer;
 //CAP32 DEF END
 
 extern void update_input(void);
-extern void texture_init(void);
-extern void texture_uninit(void);
-extern void Emu_init();
-extern void Emu_uninit();
 extern void input_gui(void);
 
 const char *retro_save_directory;
@@ -344,14 +342,6 @@ void enter_options(void) {}
 
 #endif
 
-void texture_uninit(void)
-{
-}
-
-void texture_init(void)
-{
-}
-
 void retro_message(const char *text) {
    struct retro_message msg;
    char msg_local[256];
@@ -397,6 +387,12 @@ void retro_set_environment(retro_environment_t cb)
 			"cap32_scr_tube",
 			"Monitor Type; Color|Green",
 		},
+#if FORCE_MACHINE == 6128
+		{
+			"cap32_drive_snd",
+			"Drive Sounds; disabled|enabled",
+		},
+#endif // FORCE_MACHINE
 		/*{
 			"cap32_lang_layout",
 			"System Language; English|French|Spanish",
@@ -442,6 +438,19 @@ static void update_variables(void)
          autorun = 1;
    }
 
+#if FORCE_MACHINE == 6128
+	var.key = "cap32_drive_snd";
+	var.value = NULL;
+
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (strcmp(var.value, "enabled") == 0)
+			DRIVE_SOUNDS = 1;
+		else
+			DRIVE_SOUNDS = 0;
+	}
+#endif // FORCE_MACHINE
+
    var.key = "cap32_scr_tube";
    var.value = NULL;
 
@@ -482,27 +491,11 @@ static void update_variables(void)
       emu_restart();
 }
 
-
-void Emu_init()
-{
-   emu_status = COMPUTER_BOOTING;
-   pre_main(RPATH);
-}
-
-void Emu_uninit()
-{
-	//quit_cap32_emu();
-   texture_uninit();
-}
-
 void retro_shutdown_core(void)
 {
-   LOGI("SHUTDOWN\n");
+	LOGI("SHUTDOWN\n");
 
-	//quit_cap32_emu();
-
-   texture_uninit();
-   environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+	environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
 void retro_reset(void)
@@ -825,7 +818,8 @@ void retro_init(void)
    /*fprintf(stderr, "[libretro-cap32]: Got size: %u x %u (s%d rs%d bs%u).\n",
          retrow, retroh, retro_scr_style, gfx_buffer_size, (unsigned int) sizeof(bmp));*/
 
-   Emu_init();
+   emu_status = COMPUTER_BOOTING;
+   pre_main(RPATH);
 
    if(!init_retro_snd((int16_t*) pbSndBuffer))
       LOGI("AUDIO FORMAT is not supported.\n");
@@ -835,8 +829,6 @@ void retro_init(void)
 extern void main_exit();
 void retro_deinit(void)
 {
-   Emu_uninit();
-
    UnInitOSGLU();
 
    // Clean the m3u storage
