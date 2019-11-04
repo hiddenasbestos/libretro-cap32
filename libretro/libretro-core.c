@@ -61,7 +61,6 @@ extern int snapshot_save (char *pchFileName);
 extern void play_tape();
 extern void retro_key_down(int key);
 extern void retro_key_up(int key);
-extern void Screen_SetFullUpdate(int scr);
 
 //VIDEO
 PIXEL_TYPE *Retro_Screen;
@@ -83,10 +82,10 @@ int retroh=0;
 int retro_scr_style=3, retro_scr_w=0, retro_scr_h=0;
 int gfx_buffer_size=0;
 
-#include "vkbd.i"
-
 unsigned amstrad_devices[ 2 ];
 
+int SND=1;
+int SHIFTON=-1;
 int autorun=0;
 
 int emu_status = COMPUTER_OFF;
@@ -345,30 +344,12 @@ void enter_options(void) {}
 
 #endif
 
-void save_bkg()
-{
-	memcpy(save_Screen,Retro_Screen,gfx_buffer_size);
-}
-
-void restore_bgk()
-{
-	memcpy(Retro_Screen,save_Screen,gfx_buffer_size);
-}
-
 void texture_uninit(void)
 {
 }
 
 void texture_init(void)
 {
-}
-
-void Screen_SetFullUpdate(int scr)
-{
-   if(scr==0 ||scr>1)
-      memset(&Retro_Screen, 0, gfx_buffer_size);
-   if(scr>0)
-      memset(&bmp,0, gfx_buffer_size);
 }
 
 void retro_message(const char *text) {
@@ -406,19 +387,20 @@ void retro_set_environment(retro_environment_t cb)
 
    environ_cb( RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports );
 
-   struct retro_variable variables[] = {
-	   {
-		   "cap32_autorun",
-		   "Auto Start; enabled|disabled",
-	   },
-      {
-         "cap32_scr_tube",
-         "Monitor Type; Color|Green",
-      },
-      /*{
-         "cap32_lang_layout",
-         "System Language; English|French|Spanish",
-      },*/
+   struct retro_variable variables[] =
+   {
+		{
+			"cap32_autorun",
+			"Auto Start; enabled|disabled",
+		},
+		{
+			"cap32_scr_tube",
+			"Monitor Type; Color|Green",
+		},
+		/*{
+			"cap32_lang_layout",
+			"System Language; English|French|Spanish",
+		},*/
 
       { NULL, NULL },
    };
@@ -840,12 +822,8 @@ void retro_init(void)
    else if(retrow==768)
       retro_scr_style = 4;
 
-
    /*fprintf(stderr, "[libretro-cap32]: Got size: %u x %u (s%d rs%d bs%u).\n",
          retrow, retroh, retro_scr_style, gfx_buffer_size, (unsigned int) sizeof(bmp));*/
-
-   // init screen once
-   app_init(retrow, retroh);
 
    Emu_init();
 
@@ -857,8 +835,6 @@ void retro_init(void)
 extern void main_exit();
 void retro_deinit(void)
 {
-   app_free();
-
    Emu_uninit();
 
    UnInitOSGLU();
@@ -879,12 +855,12 @@ unsigned retro_api_version(void)
 
 void retro_set_controller_port_device( unsigned port, unsigned device )
 {
-   if ( port < 2 )
-   {
-      amstrad_devices[ port ] = device;
+	if ( port < 2 )
+	{
+		amstrad_devices[ port ] = device;
 
-      	LOGI("retro_set_controller_port_device(%d) = %d\n",port,device);
-   }
+		// LOGI("retro_set_controller_port_device(%d) = %d\n",port,device);
+	}
 }
 
 void retro_get_system_info(struct retro_system_info *info)
@@ -955,14 +931,14 @@ void retro_run(void)
 	retro_loop();
 
 	// blit
-	memcpy(Retro_Screen,bmp,gfx_buffer_size);
+//	memcpy(Retro_Screen,bmp,gfx_buffer_size);
 
 	input_poll_cb(); // retroarch get keys
 
 	// --- Player 1/2 Joystick code
 	ev_joysticks();
 
-	video_cb( Retro_Screen, retro_scr_w, retro_scr_h, retro_scr_w << PIXEL_BYTES );
+	video_cb( bmp, retro_scr_w, retro_scr_h, retro_scr_w << PIXEL_BYTES );
 }
 
 bool retro_load_game(const struct retro_game_info *game)
