@@ -44,10 +44,8 @@ extern int attach_disk(char *arv, int drive);
 extern int detach_disk(int drive);
 extern int tape_insert (char *pchFileName);
 extern int cart_insert (char *pchFileName);
-extern void enter_gui(void);
 extern void kbd_buf_feed(char *s);
 extern void kbd_buf_update();
-extern int Retro_PollEvent();
 extern void retro_loop(void);
 extern int video_set_palette (void);
 extern int InitOSGLU(void);
@@ -692,6 +690,8 @@ void computer_load_file()
       }
 #endif // 6128
 
+#if FORCE_MACHINE == 464
+
    // If it's a tape
    if (strlen(RPATH) >= strlen(CDT_FILE_EXT))
       if(!strcasecmp(&RPATH[strlen(RPATH)-strlen(CDT_FILE_EXT)], CDT_FILE_EXT))
@@ -714,8 +714,10 @@ void computer_load_file()
 
       }
 
+#endif // 464
+
    // If it's a snapshot
-   if (strlen(RPATH) >= strlen(SNA_FILE_EXT))
+   /*if (strlen(RPATH) >= strlen(SNA_FILE_EXT))
       if(!strcasecmp(&RPATH[strlen(RPATH)-strlen(SNA_FILE_EXT)], SNA_FILE_EXT))
       {
          int error = snapshot_load (RPATH);
@@ -726,7 +728,7 @@ void computer_load_file()
          }
 
          return;
-      }
+      }*/
 
 }
 
