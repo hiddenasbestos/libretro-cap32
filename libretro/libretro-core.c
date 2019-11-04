@@ -62,7 +62,6 @@ extern void retro_key_down(int key);
 extern void retro_key_up(int key);
 
 //VIDEO
-PIXEL_TYPE *Retro_Screen;
 uint32_t save_Screen[WINDOW_MAX_SIZE];
 uint32_t bmp[WINDOW_MAX_SIZE];
 
@@ -76,9 +75,7 @@ char RPATH[512];
 extern int app_init(int width, int height);
 extern int app_free(void);
 
-int retrow=0;
-int retroh=0;
-int retro_scr_style=3, retro_scr_w=0, retro_scr_h=0;
+int retro_scr_w=0, retro_scr_h=0;
 int gfx_buffer_size=0;
 
 unsigned amstrad_devices[ 2 ];
@@ -131,17 +128,14 @@ void retro_set_input_poll(retro_input_poll_t cb)
 }
 
 int retro_getStyle(){
-//    LOGI("getStyle: %u\n", retro_scr_style);
-    return retro_scr_style;
+    return 4;
 }
 
 int retro_getGfxBpp(){
-//    LOGI("getBPP: %u\n", 16 * PIXEL_BYTES);
     return 16 * PIXEL_BYTES;
 }
 
 int retro_getGfxBps(){
-//    LOGI("getBPS: %u\n", retro_scr_w);
     return retro_scr_w;
 }
 
@@ -405,10 +399,6 @@ void retro_set_environment(retro_environment_t cb)
 
 static void update_variables(void)
 {
-	// Fixed resolution
-	retrow = 768;
-	retroh = 544;
-
 	// Machine specification
 	if ( emu_status == COMPUTER_OFF )
 	{
@@ -808,15 +798,11 @@ void retro_init(void)
 
    update_variables();
 
-   // save screen values from user variables
-   retro_scr_w = retrow;
-   retro_scr_h = retroh;
-   gfx_buffer_size = retro_scr_w * retro_scr_h * PITCH;
+	// fixed resolution
+   retro_scr_w = 768;
+   retro_scr_h = 544;
 
-   if(retrow==384)
-      retro_scr_style = 3;
-   else if(retrow==768)
-      retro_scr_style = 4;
+   gfx_buffer_size = retro_scr_w * retro_scr_h * PITCH;
 
    /*fprintf(stderr, "[libretro-cap32]: Got size: %u x %u (s%d rs%d bs%u).\n",
          retrow, retroh, retro_scr_style, gfx_buffer_size, (unsigned int) sizeof(bmp));*/
