@@ -62,7 +62,6 @@ extern void retro_key_down(int key);
 extern void retro_key_up(int key);
 
 //VIDEO
-uint32_t save_Screen[WINDOW_MAX_SIZE];
 uint32_t bmp[WINDOW_MAX_SIZE];
 
 //SOUND
@@ -75,8 +74,8 @@ char RPATH[512];
 extern int app_init(int width, int height);
 extern int app_free(void);
 
-int retro_scr_w=0, retro_scr_h=0;
-int gfx_buffer_size=0;
+static const int retro_scr_w = 768;
+static const int retro_scr_h = 544;
 
 unsigned amstrad_devices[ 2 ];
 
@@ -396,7 +395,27 @@ void retro_set_environment(retro_environment_t cb)
 
    environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, variables);
 }
+/*
+static void update_geometry_ex()
+{
+	struct retro_game_geometry_ex av_info;
 
+	av_info.geometry.base_width   = retro_scr_w;
+	av_info.geometry.base_height  = retro_scr_h;
+	av_info.geometry.max_width    = retro_scr_w;
+	av_info.geometry.max_height   = retro_scr_h;
+	av_info.geometry.aspect_ratio = 4.0 / 3.0;
+
+	av_info.visible_x = 64;
+	av_info.visible_width = 640;
+	av_info.visible_y = 82;
+	av_info.visible_height = 400;
+
+	// This never changes from initial AV info,
+	// so only need to call Grid Cartographer special function.
+	environ_cb( RETRO_ENVIRONMENT_SET_GEOMETRY_EX, &av_info );
+}
+*/
 static void update_variables(void)
 {
 	// Machine specification
@@ -770,18 +789,13 @@ void retro_init(void)
 //   LOGI("Retro SAVE_DIRECTORY %s\n",retro_save_directory);
 //   LOGI("Retro CONTENT_DIRECTORY %s\n",retro_content_directory);
 
-#ifndef M16B
-    	enum retro_pixel_format fmt =RETRO_PIXEL_FORMAT_XRGB8888;
-#else
-    	enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
-#endif
+	enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
 
-   if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
-   {
-      fprintf(stderr, "PIXEL FORMAT is not supported.\n");
-      LOGI("PIXEL FORMAT is not supported.\n");
-      exit(0);
-   }
+	if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+	{
+		LOGI("PIXEL FORMAT is not supported.\n");
+		exit(0);
+	}
 
    // events initialize - joy and keyboard
    ev_init();
@@ -797,15 +811,6 @@ void retro_init(void)
    retro_computer_cfg.lang = -1;
 
    update_variables();
-
-	// fixed resolution
-   retro_scr_w = 768;
-   retro_scr_h = 544;
-
-   gfx_buffer_size = retro_scr_w * retro_scr_h * PITCH;
-
-   /*fprintf(stderr, "[libretro-cap32]: Got size: %u x %u (s%d rs%d bs%u).\n",
-         retrow, retroh, retro_scr_style, gfx_buffer_size, (unsigned int) sizeof(bmp));*/
 
    emu_status = COMPUTER_BOOTING;
    pre_main(RPATH);
@@ -865,12 +870,30 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-   /* FIXME handle PAL/NTSC */
-   struct retro_game_geometry geom = { retro_scr_w, retro_scr_h, TEX_MAX_WIDTH, TEX_MAX_HEIGHT, 4.0 / 3.0 };
-   struct retro_system_timing timing = { 50.0, 44100.0 };
+	/* FIXME handle NTSC */
+	struct retro_game_geometry geom =
+	{
+		retro_scr_w, retro_scr_h,
+		retro_scr_w, retro_scr_h,
 
-   info->geometry = geom;
-   info->timing   = timing;
+		4.0 / 3.0
+	};
+
+	struct retro_system_timing timing = { 50.0, 44100.0 };
+
+	info->geometry = geom;
+	info->timing   = timing;
+}
+
+void retro_get_system_av_info_ex(struct retro_system_av_info_ex *info)
+{
+	retro_get_system_av_info( &( info->basic ) );
+
+	// extended fields
+	info->active_x = 64;
+	info->active_y = 82;
+	info->active_width = 640;
+	info->active_height = 400;
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -911,6 +934,7 @@ void retro_run(void)
 
 	retro_loop();
 
+	// blit
 	video_cb( bmp, retro_scr_w, retro_scr_h, retro_scr_w << PIXEL_BYTES );
 
 	input_poll_cb(); // retroarch get keys

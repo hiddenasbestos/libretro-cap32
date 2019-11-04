@@ -21,9 +21,6 @@
 
 extern unsigned amstrad_devices[ PORTS_NUMBER ];
 
-#define TEX_MAX_WIDTH 768
-#define TEX_MAX_HEIGHT 544
-
 // LOG
 extern retro_log_printf_t log_cb;
 #define LOGI(...) log_cb( RETRO_LOG_INFO, __VA_ARGS__ )
