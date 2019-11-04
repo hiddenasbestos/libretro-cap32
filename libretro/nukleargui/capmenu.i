@@ -18,11 +18,9 @@
             nk_layout_row_static(ctx, DEFHSZ, DEFWSZ, 2);
             if (nk_button_label(ctx, "Resume")){
                 fprintf(stdout, "quit GUI\n");
-		pauseg=0;
 	    }
             if (nk_button_label(ctx, "Reset")){
                 fprintf(stdout, "quit GUI & reset\n");
-		pauseg=0;
 		emu_reset();
 	    }
 

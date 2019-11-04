@@ -112,9 +112,6 @@ typedef struct{
      unsigned char r,g,b;
 } retro_pal;
 
-//VARIABLES
-extern int pauseg;
-
 void retro_message(const char *text);
 
 //SCREEN FUNCTIONS

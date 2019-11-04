@@ -36,9 +36,6 @@ retro_log_printf_t log_cb;
 
 computer_cfg_t retro_computer_cfg;
 
-extern int showkeyb;
-extern int Core_PollEvent(void);
-
 extern int retro_disk_auto();
 extern void change_model(int val);
 extern int snapshot_load (char *pchFileName);
@@ -62,7 +59,6 @@ extern size_t get_ram_size();
 extern void change_lang(int val);
 extern int snapshot_save (char *pchFileName);
 extern void play_tape();
-extern void retro_joy0(unsigned char joy0);
 extern void retro_key_down(int key);
 extern void retro_key_up(int key);
 extern void Screen_SetFullUpdate(int scr);
@@ -78,11 +74,9 @@ int snd_sampler = 44100 / 50;
 
 //PATH
 char RPATH[512];
-int pauseg=0; //enter_gui
 
 extern int app_init(int width, int height);
 extern int app_free(void);
-extern int app_render(int poll);
 
 int retrow=0;
 int retroh=0;
@@ -889,7 +883,7 @@ void retro_set_controller_port_device( unsigned port, unsigned device )
    {
       amstrad_devices[ port ] = device;
 
-      printf(" (%d)=%d \n",port,device);
+      	LOGI("retro_set_controller_port_device(%d) = %d\n",port,device);
    }
 }
 
@@ -942,36 +936,33 @@ void retro_audio_cb( short l, short r)
 	audio_cb(l,r);
 }
 
-void retro_audiocb(signed short int *sound_buffer,int sndbufsize){
-   int x;
-   if(pauseg==0)for(x=0;x<sndbufsize;x++)audio_cb(sound_buffer[x],sound_buffer[x]);
-}
-
-void retro_blit()
+void retro_audiocb(signed short int *sound_buffer,int sndbufsize)
 {
-   memcpy(Retro_Screen,bmp,gfx_buffer_size);
+	int x;
+	for(x=0;x<sndbufsize;x++)
+	{
+		audio_cb(sound_buffer[x],sound_buffer[x]);
+	}
 }
 
 void retro_run(void)
 {
-   bool updated = false;
+	bool updated = false;
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
-      update_variables();
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+		update_variables();
 
-   if(pauseg==0)
-   {
-      retro_loop();
-	   retro_blit();
-	   Core_PollEvent();
+	retro_loop();
 
-	   if(showkeyb==1)
-         app_render(0);
-   }
-   else if (pauseg==1)app_render(1);
+	// blit
+	memcpy(Retro_Screen,bmp,gfx_buffer_size);
 
-   video_cb(Retro_Screen,retro_scr_w,retro_scr_h,retro_scr_w<<PIXEL_BYTES);
+	input_poll_cb(); // retroarch get keys
 
+	// --- Player 1/2 Joystick code
+	ev_joysticks();
+
+	video_cb( Retro_Screen, retro_scr_w, retro_scr_h, retro_scr_w << PIXEL_BYTES );
 }
 
 bool retro_load_game(const struct retro_game_info *game)
@@ -994,7 +985,7 @@ bool retro_load_game(const struct retro_game_info *game)
 
 void retro_unload_game(void)
 {
-   pauseg=-1;
+	//
 }
 
 unsigned retro_get_region(void)
