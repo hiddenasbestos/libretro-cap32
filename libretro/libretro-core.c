@@ -513,9 +513,7 @@ void retro_reset(void)
 
 //*****************************************************************************
 //*****************************************************************************
-// Disk control
-
-#if FORCE_MACHINE == 6128
+// Disk/Tape control
 
 static bool disk_set_eject_state(bool ejected)
 {
@@ -524,9 +522,22 @@ static bool disk_set_eject_state(bool ejected)
 		dc->eject_state = ejected;
 
 		if(dc->eject_state)
+		{
+#if FORCE_MACHINE == 464
+			tape_eject();
+#elif FORCE_MACHINE == 6128
 			detach_disk(0);
+#endif // FORCE_MACHINE
+		}
 		else
+		{
+#if FORCE_MACHINE == 464
+			tape_insert( dc->files[dc->index] );
+			play_tape();
+#elif FORCE_MACHINE == 6128
 			attach_disk((char *)dc->files[dc->index],0);
+#endif // FORCE_MACHINE
+		}
 	}
 
 	return true;
@@ -555,13 +566,22 @@ static bool disk_set_image_index(unsigned index)
 	{
 		// Same disk...
 		// This can mess things in the emu
-		if(index == dc->index)
-			return true;
+//		if(index == dc->index) // <-- GC fix
+//			return true;
 
 		if ((index < dc->count) && (dc->files[index]))
 		{
 			dc->index = index;
-			log_cb(RETRO_LOG_INFO, "Disk (%d) inserted into drive A : %s\n", dc->index+1, dc->files[dc->index]);
+
+#if FORCE_MACHINE == 464
+			log_cb(RETRO_LOG_INFO, "Tape(%d) inserted: %s\n", dc->index+1, dc->files[dc->index]);
+			tape_insert( dc->files[dc->index] );
+			play_tape();
+#elif FORCE_MACHINE == 6128
+			log_cb(RETRO_LOG_INFO, "Disk(%d) inserted: %s\n", dc->index+1, dc->files[dc->index]);
+			attach_disk((char *)dc->files[dc->index],0);
+#endif // FORCE_MACHINE
+
 			return true;
 		}
 	}
@@ -579,15 +599,38 @@ static unsigned disk_get_num_images(void)
 
 static bool disk_replace_image_index(unsigned index, const struct retro_game_info *info)
 {
-	// Not implemented
-	// No many infos on this in the libretro doc...
+	if (dc)
+	{
+		if (index >= dc->count)
+			return false;
+
+		if(dc->files[index])
+		{
+			free(dc->files[index]);
+			dc->files[index] = NULL;
+		}
+
+		// TODO : Handling removing of a disk image when info = NULL
+
+		if(info != NULL)
+			dc->files[index] = strdup(info->path);
+	}
+
 	return false;
 }
 
 static bool disk_add_image_index(void)
 {
-	// Not implemented
-	// No many infos on this in the libretro doc...
+	if (dc)
+	{
+		if(dc->count <= DC_MAX_SIZE)
+		{
+			dc->files[dc->count] = NULL;
+			dc->count++;
+			return true;
+		}
+	}
+
 	return false;
 }
 
@@ -602,7 +645,6 @@ static struct retro_disk_control_callback disk_interface =
    disk_add_image_index,
 };
 
-#endif // FORCE_MACHINE == 6128
 
 //*****************************************************************************
 //*****************************************************************************
@@ -705,15 +747,19 @@ void computer_load_file()
    if (strlen(RPATH) >= strlen(CDT_FILE_EXT))
       if(!strcasecmp(&RPATH[strlen(RPATH)-strlen(CDT_FILE_EXT)], CDT_FILE_EXT))
       {
+         dc_add_file(dc, RPATH);
+
          int error = tape_insert ((char *)RPATH);
          if (!error)
          {
+			dc->index = 0;
+			dc->eject_state = false;
 #if FORCE_MACHINE == 6128
             kbd_buf_feed("|tape\n");
 #endif // FORCE_MACHINE
             kbd_buf_feed("run\"\n^");
             LOGI("Tape inserted: %s\n", (char *)RPATH);
-         }
+       }
          else
          {
             LOGI("Tape Error (%d): %s\n", error, (char *)RPATH);
@@ -800,10 +846,8 @@ void retro_init(void)
    // events initialize - joy and keyboard
    ev_init();
 
-#if FORCE_MACHINE == 6128
-	// Disk control interface
+	// Tape/Disk control interface
 	environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &disk_interface);
-#endif // FORCE_MACHINE
 
    // prepare shared variables
    retro_computer_cfg.model = -1;

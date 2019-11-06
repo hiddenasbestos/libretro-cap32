@@ -822,19 +822,21 @@ exit:
 
 void tape_eject (void)
 {
-   free(pbTapeImage);
-   pbTapeImage = NULL;
+	CPC.tape_play_button = 0;
+	free(pbTapeImage);
+	pbTapeImage = NULL;
 }
 
 void play_tape(void)
 {
 	if (pbTapeImage) {
-		if (CPC.tape_play_button) {
-			CPC.tape_play_button = 0;
-		} else {
-			CPC.tape_play_button = 0x10;
-		}
+		CPC.tape_play_button = 0x10;
 	}
+}
+
+void tape_stop(void)
+{
+	CPC.tape_play_button = 0;
 }
 
 int tape_insert (char *pchFileName)
