@@ -673,8 +673,6 @@ void computer_load_bios() {
 // load content
 void computer_load_file()
 {
-#if FORCE_MACHINE == 6128
-
    // If it's a m3u file
    if (strlen(RPATH) >= strlen(M3U_FILE_EXT))
       if(!strcasecmp(&RPATH[strlen(RPATH)-strlen(M3U_FILE_EXT)], M3U_FILE_EXT))
@@ -691,11 +689,22 @@ void computer_load_file()
             log_cb(RETRO_LOG_INFO, "file %d: %s\n", i+1, dc->files[i]);
          }
 
-         // Init first disk
+         // Init first disk/tape
          dc->index = 0;
          dc->eject_state = false;
-         LOGI("Disk (%d) inserted into drive A : %s\n", dc->index+1, dc->files[dc->index]);
-         attach_disk((char *)dc->files[dc->index],0);
+
+#if FORCE_MACHINE == 464
+
+		log_cb(RETRO_LOG_INFO, "Tape(%d) inserted: %s\n", dc->index+1, dc->files[dc->index]);
+		tape_insert( dc->files[dc->index] );
+		play_tape();
+
+#elif FORCE_MACHINE == 6128
+
+		log_cb(RETRO_LOG_INFO, "Disk(%d) inserted: %s\n", dc->index+1, dc->files[dc->index]);
+		attach_disk((char *)dc->files[dc->index],0);
+
+#endif // FORCE_MACHINE
 
          // If command was specified
          if(dc->command)
@@ -709,8 +718,13 @@ void computer_load_file()
          }
          else
          {
-            // Autoplay
+			// Autoplay
+#if FORCE_MACHINE == 464
+			if ( autorun )
+            	kbd_buf_feed("run\"\n^");
+#elif FORCE_MACHINE == 6128
             retro_disk_auto();
+#endif // FORCE_MACHINE
          }
 
          // Prepare SNA
@@ -718,6 +732,8 @@ void computer_load_file()
 
          return;
       }
+
+#if FORCE_MACHINE == 6128
 
    // If it's a disk
    if (strlen(RPATH) >= strlen(DSK_FILE_EXT))
@@ -730,9 +746,11 @@ void computer_load_file()
          // Init first disk
          dc->index = 0;
          dc->eject_state = false;
-         LOGI("Disk (%d) inserted into drive A : %s\n", dc->index+1, dc->files[dc->index]);
+         LOGI("Disk (%d) inserted into drive A: %s\n", dc->index+1, dc->files[dc->index]);
          attach_disk((char *)dc->files[dc->index],0);
-         retro_disk_auto();
+
+		// Autoplay
+		retro_disk_auto();
 
          // Prepare SNA
          sprintf(RPATH,"%s%d.SNA",RPATH,0);
@@ -754,10 +772,10 @@ void computer_load_file()
          {
 			dc->index = 0;
 			dc->eject_state = false;
-#if FORCE_MACHINE == 6128
-            kbd_buf_feed("|tape\n");
-#endif // FORCE_MACHINE
-            kbd_buf_feed("run\"\n^");
+
+			if ( autorun )
+            	kbd_buf_feed("run\"\n^");
+
             LOGI("Tape inserted: %s\n", (char *)RPATH);
        }
          else
@@ -898,7 +916,7 @@ void retro_get_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
 #if FORCE_MACHINE == 464
    info->library_name = "CaPriCe (464)";
-   info->valid_extensions = "cdt";
+   info->valid_extensions = "cdt|m3u";
 #elif FORCE_MACHINE == 6128
    info->library_name = "CaPriCe (6128)";
    info->valid_extensions = "dsk|m3u";
