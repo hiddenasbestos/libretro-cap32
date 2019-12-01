@@ -915,16 +915,16 @@ void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
 #if FORCE_MACHINE == 464
-   info->library_name = "CaPriCe (464)";
+   info->library_name = "CaPriCe 464";
    info->valid_extensions = "cdt|m3u";
 #elif FORCE_MACHINE == 6128
-   info->library_name = "CaPriCe (6128)";
+   info->library_name = "CaPriCe 6128";
    info->valid_extensions = "dsk|m3u";
 #endif // FORCE_MACHINE
    #ifndef GIT_VERSION
    #define GIT_VERSION "4.2"
    #endif
-   info->library_version  = GIT_VERSION;
+   info->library_version = GIT_VERSION " (" __DATE__ ")";
    info->need_fullpath    = true;
    info->block_extract = false;
 
