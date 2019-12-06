@@ -947,17 +947,6 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->timing   = timing;
 }
 
-void retro_get_system_av_info_ex(struct retro_system_av_info_ex *info)
-{
-	retro_get_system_av_info( &( info->basic ) );
-
-	// extended fields
-	info->active_x = 64;
-	info->active_y = 82;
-	info->active_width = 640;
-	info->active_height = 400;
-}
-
 void retro_set_audio_sample(retro_audio_sample_t cb)
 {
    audio_cb = cb;
