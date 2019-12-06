@@ -56,6 +56,8 @@ uint8_t *pbTapeImage = NULL;
 uint8_t *pbTapeImageEnd = NULL;
 uint8_t *pbSnaImage = NULL;
 
+extern int iTapeBlockCount;
+
 
 /**
  * file utils
@@ -822,6 +824,7 @@ exit:
 
 void tape_eject (void)
 {
+	iTapeBlockCount = -1; // hide tape counter
 	CPC.tape_play_button = 0;
 	free(pbTapeImage);
 	pbTapeImage = NULL;
@@ -829,7 +832,8 @@ void tape_eject (void)
 
 void play_tape(void)
 {
-	if (pbTapeImage) {
+	if (pbTapeImage)
+	{
 		CPC.tape_play_button = 0x10;
 	}
 }

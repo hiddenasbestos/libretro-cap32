@@ -31,6 +31,9 @@ char cart_name[512]="\0";
 #include "retro_disk_control.h"
 static dc_storage* dc;
 
+// TAPE CONTROL
+extern int iTapeBlockCount;
+
 // LOG
 retro_log_printf_t log_cb;
 #define LOGI(...) log_cb( RETRO_LOG_INFO, __VA_ARGS__ )
@@ -989,6 +992,12 @@ void retro_run(void)
 	video_cb( bmp, retro_scr_w, retro_scr_h, retro_scr_w << PIXEL_BYTES );
 
 	input_poll_cb(); // retroarch get keys
+
+#if FORCE_MACHINE == 464
+	// NOTE: This is not accurate to the real hardware, 
+	// but it does give a rough indication of progress.
+	environ_cb( RETRO_ENVIRONMENT_SET_TAPE_COUNTER, &iTapeBlockCount );
+#endif
 
 	ev_joysticks();
 }

@@ -65,6 +65,7 @@ uint16_t *pwTapePulseTableEnd;
 uint16_t *pwTapePulseTablePtr;
 uint16_t wCycleTable[2];
 int iTapeCycleCount;
+int iTapeBlockCount = -1;
 uint32_t dwTapePulseCycles;
 uint32_t dwTapeZeroPulseCycles;
 uint32_t dwTapeOnePulseCycles;
@@ -320,6 +321,8 @@ int Tape_GetNextBlock(void)
 
 void Tape_BlockDone(void)
 {
+	++iTapeBlockCount;
+
    if (pbTapeBlock < pbTapeImageEnd)
    {
       switch (*pbTapeBlock)
@@ -604,6 +607,7 @@ void Tape_Rewind(void)
    pbTapeBlock = pbTapeImage;
    bTapeLevel = TAPE_LEVEL_LOW;
    iTapeCycleCount = 0;
+   iTapeBlockCount = 0;
    CPC.tape_play_button = 0;
    Tape_GetNextBlock();
 }
