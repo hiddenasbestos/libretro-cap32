@@ -55,6 +55,18 @@
 
 #include "retro_snd.h"
 
+#include "libretro.h"
+extern retro_log_printf_t log_cb;
+extern retro_environment_t environ_cb;
+
+static void gui_led( int state )
+{
+	if ( environ_cb )
+	{
+		environ_cb( RETRO_ENVIRONMENT_DISK_DRIVE_LED_BLINK, &state );
+	}
+}
+
 extern t_CPC CPC;
 extern t_FDC FDC;
 extern t_z80regs z80;
@@ -813,6 +825,7 @@ void fdc_seek(void)
 
 void fdc_readtrk(void)
 {
+	gui_led(0);
    FDC.led = 1; // turn the drive LED on
    check_unit(); // switch to target drive
    if (init_status_regs() == 0) { // drive Ready?
@@ -848,6 +861,7 @@ void fdc_readtrk(void)
 
 void fdc_write(void)
 {
+	gui_led(0);
    FDC.led = 1; // turn the drive LED on
    check_unit(); // switch to target drive
    if (init_status_regs() == 0) { // drive Ready?
@@ -888,6 +902,7 @@ void fdc_write(void)
 
 void fdc_read(void)
 {
+	gui_led(0);
    retro_snd_cmd(SND_FDCREAD, ST_ON);
    FDC.led = 1; // turn the drive LED on
    check_unit(); // switch to target drive
@@ -921,6 +936,7 @@ void fdc_read(void)
 
 void fdc_readID(void)
 {
+	gui_led(0);
    FDC.led = 1; // turn the drive LED on
    check_unit(); // switch to target drive
    if (init_status_regs() == 0) { // drive Ready?
@@ -954,6 +970,7 @@ void fdc_readID(void)
 
 void fdc_writeID(void)
 {
+	gui_led(0);
    FDC.led = 1; // turn the drive LED on
    check_unit(); // switch to target drive
    if (init_status_regs() == 0)
@@ -993,6 +1010,7 @@ void fdc_writeID(void)
 
 void fdc_scan(void)
 {
+	gui_led(0);
    FDC.led = 1; // turn the drive LED on
    check_unit(); // switch to target drive
    if (init_status_regs() == 0)
