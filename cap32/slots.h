@@ -35,6 +35,7 @@ int dsk_save (char *pchFileName, t_drive *drive, char chID);
 int dsk_format (t_drive *drive, int iFormat);
 
 void tape_eject (void);
+void tape_stop(void);
 void play_tape(void);
 int tape_insert (char *pchFileName);
 int tape_insert_voc (char *pchFileName);

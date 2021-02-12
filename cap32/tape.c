@@ -34,6 +34,10 @@
 #include "cap32.h"
 #include "tape.h"
 #include "z80.h"
+#include "slots.h"
+
+#include "libretro.h"
+extern retro_environment_t environ_cb;
 
 #define TAPE_PILOT_STAGE 1
 #define TAPE_SYNC_STAGE 2
@@ -360,7 +364,7 @@ void Tape_BlockDone(void)
       if (!Tape_GetNextBlock())
       {
          dwTapeStage = TAPE_END;
-         CPC.tape_play_button = 0;
+         tape_stop();
       }
    }
 }
@@ -597,7 +601,7 @@ void Tape_UpdateLevel(void)
          break;
 
       case TAPE_END:
-         CPC.tape_play_button = 0;
+         tape_stop();
          break;
    }
 }
@@ -608,6 +612,6 @@ void Tape_Rewind(void)
    bTapeLevel = TAPE_LEVEL_LOW;
    iTapeCycleCount = 0;
    iTapeBlockCount = 0;
-   CPC.tape_play_button = 0;
+   tape_stop();
    Tape_GetNextBlock();
 }

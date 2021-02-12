@@ -29,6 +29,9 @@
 #include "z80.h"
 #include "errors.h"
 
+#include "libretro.h"
+extern retro_environment_t environ_cb;
+
 extern t_CPC CPC;
 extern t_CRTC CRTC;
 extern t_FDC FDC;
@@ -828,6 +831,11 @@ void tape_eject (void)
 	CPC.tape_play_button = 0;
 	free(pbTapeImage);
 	pbTapeImage = NULL;
+
+	environ_cb( RETRO_ENVIRONMENT_SET_TAPE_FILEPATH, NULL );
+
+	int state = RETROTAPE_STATE_EMPTY;
+	environ_cb( RETRO_ENVIRONMENT_SET_TAPE_STATE, &state );
 }
 
 void play_tape(void)
@@ -841,6 +849,9 @@ void play_tape(void)
 void tape_stop(void)
 {
 	CPC.tape_play_button = 0;
+
+	int state = RETROTAPE_STATE_STOPPED;
+	environ_cb( RETRO_ENVIRONMENT_SET_TAPE_STATE, &state );
 }
 
 int tape_insert (char *pchFileName)
@@ -1007,6 +1018,8 @@ int tape_insert (char *pchFileName)
    }
 
    Tape_Rewind();
+
+	environ_cb( RETRO_ENVIRONMENT_SET_TAPE_FILEPATH, &pchFileName );
 
    return 0;
 }

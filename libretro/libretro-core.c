@@ -2,6 +2,7 @@
 #include "libretro-core.h"
 #include "retro_events.h"
 #include "retro_snd.h"
+#include "tape.h"
 
 //CORE VAR
 #ifdef _WIN32
@@ -516,7 +517,9 @@ void retro_reset(void)
 
 //*****************************************************************************
 //*****************************************************************************
-// Disk/Tape control
+// Disk control (6128)
+
+#if FORCE_MACHINE == 6128
 
 static bool disk_set_eject_state(bool ejected)
 {
@@ -526,20 +529,11 @@ static bool disk_set_eject_state(bool ejected)
 
 		if(dc->eject_state)
 		{
-#if FORCE_MACHINE == 464
-			tape_eject();
-#elif FORCE_MACHINE == 6128
 			detach_disk(0);
-#endif // FORCE_MACHINE
 		}
 		else
 		{
-#if FORCE_MACHINE == 464
-			tape_insert( dc->files[dc->index] );
-			play_tape();
-#elif FORCE_MACHINE == 6128
 			attach_disk((char *)dc->files[dc->index],0);
-#endif // FORCE_MACHINE
 		}
 	}
 
@@ -647,6 +641,8 @@ static struct retro_disk_control_callback disk_interface =
    disk_replace_image_index,
    disk_add_image_index,
 };
+
+#endif // CPC 6128
 
 
 //*****************************************************************************
@@ -867,8 +863,20 @@ void retro_init(void)
    // events initialize - joy and keyboard
    ev_init();
 
-	// Tape/Disk control interface
+#if FORCE_MACHINE == 464
+
+	struct retro_content_fileexts tape_info;
+	tape_info.TapeInsert = "cdt";
+	tape_info.TapeCreate = NULL;
+	tape_info.DiskControl = NULL;
+	environ_cb(RETRO_ENVIRONMENT_SET_CONTENT_FILEEXTS, &tape_info);
+
+#elif FORCE_MACHINE == 6128
+
+	// Floppy disk control interface
 	environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &disk_interface);
+
+#endif
 
    // prepare shared variables
    retro_computer_cfg.model = -1;
@@ -919,7 +927,7 @@ void retro_get_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
 #if FORCE_MACHINE == 464
    info->library_name = "CaPriCe 464";
-   info->valid_extensions = "cdt|m3u";
+   info->valid_extensions = "cdt";
 #elif FORCE_MACHINE == 6128
    info->library_name = "CaPriCe 6128";
    info->valid_extensions = "dsk|m3u";
@@ -994,9 +1002,17 @@ void retro_run(void)
 	input_poll_cb(); // retroarch get keys
 
 #if FORCE_MACHINE == 464
-	// NOTE: This is not accurate to the real hardware, 
+	// NOTE: This is not accurate to the real hardware,
 	// but it does give a rough indication of progress.
 	environ_cb( RETRO_ENVIRONMENT_SET_TAPE_COUNTER, &iTapeBlockCount );
+
+	// Tape state.
+	int tape_state;
+	if ( CPC.tape_play_button == 0x10 )
+	{
+		tape_state = ( CPC.tape_motor ) ? RETROTAPE_STATE_PLAYING : RETROTAPE_STATE_HOLD;
+		environ_cb( RETRO_ENVIRONMENT_SET_TAPE_STATE, &tape_state );
+	}
 #endif
 
 	ev_joysticks();
@@ -1089,4 +1105,72 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
    (void)index;
    (void)enabled;
    (void)code;
+}
+
+
+bool retro_tape_command( unsigned command, void* param )
+{
+	/*log_cb(RETRO_LOG_INFO, "retro_tape_command. Got command %d.\n", command );*/
+
+	bool result;
+	result = false;
+
+	switch ( command )
+	{
+
+	case RETROTAPE_COMMAND_PLAY:
+		play_tape();
+		result = true;
+		break;
+
+	case RETROTAPE_COMMAND_RECORD:
+		log_cb(RETRO_LOG_WARN, "retro_tape_command. RETROTAPE_COMMAND_RECORD not supported.\n" );
+		result = false;
+		break;
+
+	case RETROTAPE_COMMAND_STOP:
+		tape_stop();
+		result = true;
+		break;
+
+	case RETROTAPE_COMMAND_REWIND:
+		Tape_Rewind();
+		result = true;
+		break;
+
+	case RETROTAPE_COMMAND_FFWD:
+		log_cb(RETRO_LOG_WARN, "retro_tape_command. RETROTAPE_COMMAND_FFWD not supported.\n" );
+		result = false;
+		break;
+
+	case RETROTAPE_COMMAND_RESETCNT:
+		log_cb(RETRO_LOG_WARN, "retro_tape_command. RETROTAPE_COMMAND_RESETCNT not supported.\n" );
+		result = false;
+		break;
+
+	case RETROTAPE_COMMAND_EJECT:
+		tape_eject();
+		result = true;
+		break;
+
+	case RETROTAPE_COMMAND_INSERT:
+		{
+			int r;
+			r = tape_insert( *(char**)param );
+			result = ( r == 0 ); // 0 = OK
+		}
+		break;
+
+	case RETROTAPE_COMMAND_CREATE:
+		log_cb(RETRO_LOG_WARN, "retro_tape_command. RETROTAPE_COMMAND_CREATE not supported.\n" );
+		result = false;
+		break;
+
+	default:
+		log_cb(RETRO_LOG_ERROR, "retro_tape_command. Got unknown command %d.\n", command );
+		break;
+
+	}
+
+	return result;
 }
