@@ -827,7 +827,11 @@ exit:
 
 void tape_eject (void)
 {
+#if FORCE_MACHINE == 464
+	iTapeBlockCount = 0; // reset tape counter
+#elif FORCE_MACHINE == 6128
 	iTapeBlockCount = -1; // hide tape counter
+#endif
 	CPC.tape_play_button = 0;
 	free(pbTapeImage);
 	pbTapeImage = NULL;

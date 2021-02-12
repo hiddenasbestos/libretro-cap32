@@ -69,7 +69,11 @@ uint16_t *pwTapePulseTableEnd;
 uint16_t *pwTapePulseTablePtr;
 uint16_t wCycleTable[2];
 int iTapeCycleCount;
-int iTapeBlockCount = -1;
+#if FORCE_MACHINE == 464
+int iTapeBlockCount = 0; // reset tape counter
+#elif FORCE_MACHINE == 6128
+int iTapeBlockCount = -1; // hide tape counter
+#endif
 uint32_t dwTapePulseCycles;
 uint32_t dwTapeZeroPulseCycles;
 uint32_t dwTapeOnePulseCycles;
